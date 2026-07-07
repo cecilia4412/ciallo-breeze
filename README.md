@@ -4,8 +4,6 @@
 
 一个有趣的菲比啾比飘动效果页面，点击屏幕会弹出表情包和动画效果。
 
-[![GitHub stars](https://img.shields.io/github/stars/cecilia4412/phoebe-chirp.svg)](https://github.com/cecilia4412/phoebe-chirp/stargazers) [![GitHub forks](https://img.shields.io/github/forks/cecilia4412/phoebe-chirp.svg)](https://github.com/cecilia4412/phoebe-chirp/network) [![GitHub license](https://img.shields.io/github/license/cecilia4412/phoebe-chirp.svg)](https://github.com/cecilia4412/phoebe-chirp/blob/main/LICENSE)
-
 </div>
 
 ## 🖼️ 效果预览
