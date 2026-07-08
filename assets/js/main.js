@@ -262,12 +262,24 @@ async function loadImages() {
             const href = link.getAttribute('href');
             if (href && imageExtensions.some(ext => href.toLowerCase().endsWith(ext))) {
                 const fileName = href.replace(/^.*[\\/]/, '');
-                CONFIG.IMAGES.push('/assets/images_nobg/' + fileName);
+                CONFIG.IMAGES.push('assets/images_nobg/' + fileName);
             }
         });
         
         CONFIG.IMAGES.sort();
         console.log(`加载了 ${CONFIG.IMAGES.length} 个图片`);
+        
+        // 预缓存所有图片，确保点击时立即显示
+        const preloadPromises = CONFIG.IMAGES.map(src => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = resolve;
+                img.onerror = resolve;
+                img.src = src;
+            });
+        });
+        await Promise.all(preloadPromises);
+        console.log(`预缓存 ${CONFIG.IMAGES.length} 个图片完成`);
     } catch (error) {
         console.error('加载图片列表失败:', error);
     }
