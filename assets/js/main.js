@@ -1,22 +1,13 @@
 const CONFIG = {
-    IMAGES: [
-        '06ed9efbe6cd7b89347f779a492442a7d8330e80.jpg',
-        '4cc5ac0928381f30090ac0b0ef014c086f06f081.jpg',
-        '5f5b601249540923aeb33a67d458d109b2de4939.jpg',
-        '65afe8a88226cffcd83af2abff014a90f703ea80.jpg',
-        '7f8476c551da81cba6a1ced41466d01608243154.jpg',
-        '88450f0e4bfbfbed4ea64f673ef0f736aec31f13.gif',
-        '9d287e638535e5dda93ce8c630c6a7efcf1b6287.jpg',
-        'a22590c69f3df8dc45e6d6888b11728b46102838.jpg'
-    ],
+    IMAGES: [],
     INITIAL_COUNT: 5,
-    MAX_COUNT: 12,
+    MAX_COUNT: 15,
     SPEED_MIN: 0.5,
     SPEED_MAX: 1.5,
-    SIZE_MIN: 50,
-    SIZE_MAX: 100,
-    POPUP_SIZE_MIN: 40,
-    POPUP_SIZE_MAX: 70,
+    SIZE_MIN: 120,
+    SIZE_MAX: 195,
+    POPUP_SIZE_MIN: 80,
+    POPUP_SIZE_MAX: 120,
     POPUP_DURATION: 2500,
     MIN_DISTANCE: 130,
     HORIZONTAL_GAP: 200,
@@ -111,7 +102,7 @@ function findValidPosition(size, speed = 0, isNewEntry = false) {
 function createPhoebeElement(isPopup = false, x = 0, y = 0) {
     const el = document.createElement('div');
     const size = isPopup ? getRandomPopupSize() : getRandomSize();
-    const imgSrc = 'assets/images/' + getRandomImage();
+    const imgSrc = getRandomImage();
     
     const img = document.createElement('img');
     img.src = imgSrc;
@@ -167,7 +158,7 @@ function updateScrollAnimation() {
             const size = getRandomSize();
             const speed = getRandomSpeed();
             const pos = findValidPosition(size, speed, true);
-            const imgSrc = 'assets/images/' + getRandomImage();
+            const imgSrc = getRandomImage();
             
             phoebe.el.style.left = pos.x + 'px';
             phoebe.el.style.top = pos.y + 'px';
@@ -185,40 +176,15 @@ function updateScrollAnimation() {
 }
 
 function playAudioFile() {
-    const audioFiles = ['phoebe_01.mp3', 'phoebe_02.mp3', 'phoebe_03.wav'];
-    const randomFile = audioFiles[Math.floor(Math.random() * audioFiles.length)];
+    const audioCount = 16;
+    const randomNum = Math.floor(Math.random() * audioCount) + 1;
+    const randomFile = `phoebe_${randomNum.toString().padStart(3, '0')}.mp3`;
     const audio = new Audio('assets/audio/' + randomFile);
     audio.volume = 0.5;
-    
-    audio.addEventListener('error', () => {
-        console.log('音频文件未找到，使用Web Audio API生成提示音');
-        playToneSound();
-    });
-    
-    audio.play().catch(() => {
-        playToneSound();
-    });
+    audio.play();
 }
 
-function playToneSound() {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
-    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
-    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2);
-    
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
-}
+
 
 function createClickEffect(x, y) {
     const effect = document.createElement('div');
@@ -245,7 +211,7 @@ function triggerEasterEgg() {
             
             const popup = document.createElement('div');
             const img = document.createElement('img');
-            img.src = 'assets/images/' + getRandomImage();
+            img.src = getRandomImage();
             img.style.width = '50px';
             img.style.height = '50px';
             img.style.objectFit = 'contain';
@@ -282,20 +248,46 @@ function handleClick(e) {
     }
 }
 
+async function loadImages() {
+    try {
+        const response = await fetch('assets/images_nobg/');
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = doc.querySelectorAll('a');
+        
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+        
+        links.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && imageExtensions.some(ext => href.toLowerCase().endsWith(ext))) {
+                const fileName = href.replace(/^.*[\\/]/, '');
+                CONFIG.IMAGES.push('/assets/images_nobg/' + fileName);
+            }
+        });
+        
+        CONFIG.IMAGES.sort();
+        console.log(`加载了 ${CONFIG.IMAGES.length} 个图片`);
+    } catch (error) {
+        console.error('加载图片列表失败:', error);
+    }
+}
+
 function tryAddNewPhoebe() {
     if (phoebeList.length < CONFIG.MAX_COUNT) {
         createPhoebeElement();
     }
 }
 
-function init() {
+async function init() {
+    await loadImages();
     
     document.addEventListener('click', handleClick);
     
     for (let i = 0; i < CONFIG.INITIAL_COUNT; i++) {
         const el = document.createElement('div');
         const size = getRandomSize();
-        const imgSrc = 'assets/images/' + getRandomImage();
+        const imgSrc = getRandomImage();
         
         const img = document.createElement('img');
         img.src = imgSrc;

@@ -2,13 +2,9 @@
 
 # Phoebe Chirp
 
-一个有趣的菲比啾比飘动效果页面，点击屏幕会弹出表情包和动画效果。
+一个有趣的菲比啾比表情包飘动效果页面，点击屏幕会弹出表情包和动画效果。
 
 </div>
-
-## 🖼️ 效果预览
-
-一个充满菲比表情包飘动的页面，点击屏幕会弹出随机表情包并播放音效。
 
 ## ✨ 功能特点
 
@@ -22,11 +18,9 @@
 
 ## 🚀 快速开始
 
-### 方式一：直接打开
+### 使用 HTTP 服务器
 
-直接在浏览器中打开 `index.html` 文件即可运行。
-
-### 方式二：使用 HTTP 服务器
+由于前端使用动态加载图片列表，需要通过 HTTP 服务器运行：
 
 ```bash
 # 使用 Python 3
@@ -40,3 +34,27 @@ php -S localhost:3000
 ```
 
 然后访问 `http://localhost:3000`
+
+## 📦 图片处理
+
+### 重命名图片
+
+将 `assets/images` 目录中的图片重命名为 `phoebe_xxx` 格式：
+
+```bash
+cd scripts
+python rename_images.py
+```
+
+### 去背景处理
+
+将 `assets/images` 中的图片去背景后保存到 `assets/images_nobg`：
+
+```bash
+cd scripts
+python remove_images_background.py
+```
+
+**说明：**
+- GIF 文件会直接复制，保持动图效果
+- JPG/PNG 等格式会去除白色背景并转换为 PNG 格式

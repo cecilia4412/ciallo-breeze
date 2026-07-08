@@ -1,6 +1,0 @@
-在此目录放置菲比啾比相关音频文件：
-- phoebe_01.mp3
-- phoebe_02.mp3  
-- phoebe_03.wav
-
-音频文件需为硬编码列表，与 main.js 中的 playAudioFile 函数对应。
