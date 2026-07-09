@@ -1,5 +1,4 @@
 const CONFIG = {
-    IMAGES: [],
     INITIAL_COUNT: 5,
     MAX_COUNT: 15,
     SPEED_MIN: 0.5,
@@ -26,10 +25,6 @@ function getRandomSize() {
 
 function getRandomSpeed() {
     return Math.random() * (CONFIG.SPEED_MAX - CONFIG.SPEED_MIN) + CONFIG.SPEED_MIN;
-}
-
-function getRandomImage() {
-    return CONFIG.IMAGES[Math.floor(Math.random() * CONFIG.IMAGES.length)];
 }
 
 function getRandomPopupSize() {
@@ -100,9 +95,11 @@ function findValidPosition(size, speed = 0, isNewEntry = false) {
 }
 
 function createPhoebeElement(isPopup = false, x = 0, y = 0) {
+    const imgSrc = getRandomImage();
+    if (!imgSrc) return;  // 图片池为空，跳过
+
     const el = document.createElement('div');
     const size = isPopup ? getRandomPopupSize() : getRandomSize();
-    const imgSrc = getRandomImage();
     
     const img = document.createElement('img');
     img.src = imgSrc;
@@ -159,16 +156,18 @@ function updateScrollAnimation() {
             const speed = getRandomSpeed();
             const pos = findValidPosition(size, speed, true);
             const imgSrc = getRandomImage();
-            
+
             phoebe.el.style.left = pos.x + 'px';
             phoebe.el.style.top = pos.y + 'px';
             phoebe.size = size;
             phoebe.speed = speed;
-            
-            const img = phoebe.el.querySelector('img');
-            img.src = imgSrc;
-            img.style.width = size + 'px';
-            img.style.height = size + 'px';
+
+            if (imgSrc) {
+                const img = phoebe.el.querySelector('img');
+                img.src = imgSrc;
+                img.style.width = size + 'px';
+                img.style.height = size + 'px';
+            }
         }
     });
 
@@ -204,14 +203,17 @@ function triggerEasterEgg() {
     
     for (let i = 0; i < 20; i++) {
         setTimeout(() => {
+            const imgSrc = getRandomImage();
+            if (!imgSrc) return;
+
             const angle = (i / 20) * Math.PI * 2;
             const radius = 100 + Math.random() * 200;
             const x = centerX + Math.cos(angle) * radius;
             const y = centerY + Math.sin(angle) * radius;
-            
+
             const popup = document.createElement('div');
             const img = document.createElement('img');
-            img.src = getRandomImage();
+            img.src = imgSrc;
             img.style.width = '50px';
             img.style.height = '50px';
             img.style.objectFit = 'contain';
@@ -248,41 +250,51 @@ function handleClick(e) {
     }
 }
 
-async function loadImages() {
+// 可用图片池：预缓存好一个就加入一个，无需等待全部
+const readyImages = [];
+
+async function loadImageList() {
     try {
         const response = await fetch('assets/images_nobg/');
         const html = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const links = doc.querySelectorAll('a');
-        
+
         const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-        
+        const allSrcs = [];
+
         links.forEach(link => {
             const href = link.getAttribute('href');
             if (href && imageExtensions.some(ext => href.toLowerCase().endsWith(ext))) {
                 const fileName = href.replace(/^.*[\\/]/, '');
-                CONFIG.IMAGES.push('assets/images_nobg/' + fileName);
+                allSrcs.push('assets/images_nobg/' + fileName);
             }
         });
-        
-        CONFIG.IMAGES.sort();
-        console.log(`加载了 ${CONFIG.IMAGES.length} 个图片`);
-        
-        // 预缓存所有图片，确保点击时立即显示
-        const preloadPromises = CONFIG.IMAGES.map(src => {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = resolve;
-                img.onerror = resolve;
-                img.src = src;
-            });
+
+        allSrcs.sort();
+        console.log(`发现 ${allSrcs.length} 个图片，开始逐个预缓存`);
+
+        // 逐个预缓存：缓存好一个就加入 readyImages，立即可用
+        allSrcs.forEach(src => {
+            const img = new Image();
+            img.onload = () => {
+                readyImages.push(src);
+                console.log(`预缓存完成 (${readyImages.length}/${allSrcs.length}): ${src}`);
+            };
+            img.onerror = () => {
+                console.warn(`图片加载失败，跳过: ${src}`);
+            };
+            img.src = src;
         });
-        await Promise.all(preloadPromises);
-        console.log(`预缓存 ${CONFIG.IMAGES.length} 个图片完成`);
     } catch (error) {
         console.error('加载图片列表失败:', error);
     }
+}
+
+function getRandomImage() {
+    if (readyImages.length === 0) return null;
+    return readyImages[Math.floor(Math.random() * readyImages.length)];
 }
 
 function tryAddNewPhoebe() {
@@ -292,44 +304,56 @@ function tryAddNewPhoebe() {
 }
 
 async function init() {
-    await loadImages();
-    
+    // 启动图片列表加载和逐个预缓存（不阻塞，后台进行）
+    loadImageList();
+
     document.addEventListener('click', handleClick);
-    
-    for (let i = 0; i < CONFIG.INITIAL_COUNT; i++) {
-        const el = document.createElement('div');
-        const size = getRandomSize();
-        const imgSrc = getRandomImage();
-        
-        const img = document.createElement('img');
-        img.src = imgSrc;
-        img.style.width = size + 'px';
-        img.style.height = size + 'px';
-        img.style.objectFit = 'contain';
-        img.style.borderRadius = '12px';
-        img.draggable = false;
-        
-        el.appendChild(img);
-        el.className = 'phoebe-item';
-        
-        const pos = findValidPosition(size);
-        
-        el.style.left = pos.x + 'px';
-        el.style.top = pos.y + 'px';
-        
-        const phoebe = {
-            el: el,
-            speed: getRandomSpeed(),
-            size: size,
-            id: phoebeCount++
-        };
-        
-        phoebeList.push(phoebe);
-        container.appendChild(el);
-    }
-    
+
+    // 用定时器尝试添加初始元素，等有可用图片时自然填入
+    let initialAdded = 0;
+    const initialInterval = setInterval(() => {
+        if (readyImages.length === 0) return;  // 还没有图片，等下一轮
+        while (initialAdded < CONFIG.INITIAL_COUNT && readyImages.length > 0) {
+            const imgSrc = getRandomImage();
+            if (!imgSrc) break;
+
+            const el = document.createElement('div');
+            const size = getRandomSize();
+
+            const img = document.createElement('img');
+            img.src = imgSrc;
+            img.style.width = size + 'px';
+            img.style.height = size + 'px';
+            img.style.objectFit = 'contain';
+            img.style.borderRadius = '12px';
+            img.draggable = false;
+
+            el.appendChild(img);
+            el.className = 'phoebe-item';
+
+            const pos = findValidPosition(size);
+
+            el.style.left = pos.x + 'px';
+            el.style.top = pos.y + 'px';
+
+            const phoebe = {
+                el: el,
+                speed: getRandomSpeed(),
+                size: size,
+                id: phoebeCount++
+            };
+
+            phoebeList.push(phoebe);
+            container.appendChild(el);
+            initialAdded++;
+        }
+        if (initialAdded >= CONFIG.INITIAL_COUNT) {
+            clearInterval(initialInterval);
+        }
+    }, 200);
+
     updateScrollAnimation();
-    
+
     setInterval(() => {
         tryAddNewPhoebe();
     }, 4000);
